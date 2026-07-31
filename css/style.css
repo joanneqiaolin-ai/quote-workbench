@@ -1,0 +1,318 @@
+/* ===== 外贸报价AI工作台 · 移动端样式 ===== */
+:root {
+  --primary: #0f4c81;
+  --primary-d: #0c3a63;
+  --accent: #38b2e6;
+  --bg: #f3f5f8;
+  --card: #ffffff;
+  --text: #1f2933;
+  --muted: #6b7785;
+  --line: #e3e8ef;
+  --ok: #1f9d6b;
+  --warn: #e0892b;
+  --danger: #d9534f;
+  --radius: 14px;
+  --shadow: 0 2px 10px rgba(15, 76, 129, 0.08);
+  --tab-h: 60px;
+  --header-h: 52px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
+  padding-top: calc(var(--header-h) + env(safe-area-inset-top, 0px));
+}
+
+/* Header */
+.app-header {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+  background: linear-gradient(135deg, var(--primary), var(--primary-d));
+  color: #fff; display: flex; align-items: center; justify-content: space-between;
+  padding-left: 16px; padding-right: 12px; z-index: 50;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+.app-header .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 17px; }
+.app-header .brand .logo {
+  width: 26px; height: 26px; border-radius: 7px; background: #fff; color: var(--primary);
+  display: grid; place-items: center; font-weight: 800; font-size: 15px;
+}
+.app-header .sub { font-size: 11px; opacity: .8; font-weight: 400; }
+.btn-install {
+  background: #fff; color: var(--primary); border: none; border-radius: 20px;
+  padding: 6px 14px; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.btn-help {
+  width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff;
+  background: transparent; color: #fff; font-size: 17px; font-weight: 800;
+  cursor: pointer; display: grid; place-items: center; line-height: 1; flex: 0 0 auto;
+}
+@media (min-width: 768px) { .btn-help { margin-right: 6px; } }
+
+/* Tab bar */
+.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: #fff; border-top: 1px solid var(--line);
+  display: flex; z-index: 50;
+}
+.tabbar button {
+  flex: 1; border: none; background: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; color: var(--muted); font-size: 11px; padding: 4px 0;
+}
+.tabbar button .ic { font-size: 21px; line-height: 1; }
+.tabbar button.active { color: var(--primary); font-weight: 700; }
+.tabbar button.active .ic { transform: translateY(-1px); }
+
+/* Pages */
+.page { display: none; padding: 14px 14px 24px; animation: fade .2s ease; }
+.page.active { display: block; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px);} to {opacity:1;transform:none;} }
+
+/* Cards */
+.card {
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 16px; margin-bottom: 14px;
+}
+.card h3 { margin: 0 0 12px; font-size: 15px; color: var(--primary); display: flex; align-items: center; gap: 6px; }
+.card h3 .tag { font-size: 11px; background: #eaf4fb; color: var(--primary); padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.muted { color: var(--muted); font-size: 13px; }
+
+/* Form */
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 5px; font-weight: 600; }
+.field .hint { font-size: 11px; color: #9aa6b2; font-weight: 400; }
+input, select, textarea {
+  width: 100%; border: 1.5px solid var(--line); border-radius: 10px;
+  padding: 11px 12px; font-size: 16px; background: #fff; color: var(--text);
+  font-family: inherit;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56,178,230,.15); }
+textarea { resize: vertical; min-height: 90px; }
+.row { display: flex; gap: 10px; }
+.row > .field { flex: 1; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: none; border-radius: 11px; padding: 13px 16px; font-size: 15px; font-weight: 700;
+  cursor: pointer; width: 100%; background: var(--primary); color: #fff;
+}
+.btn:active { transform: scale(.98); }
+.btn.accent { background: var(--accent); }
+.btn.ghost { background: #eef2f7; color: var(--primary); }
+.btn.light { background: #eaf4fb; color: var(--primary); }
+.btn.sm { padding: 8px 12px; font-size: 13px; width: auto; border-radius: 9px; }
+.btn.danger { background: #fdecec; color: var(--danger); }
+.btn-row { display: flex; gap: 10px; }
+
+/* Result box */
+.result {
+  background: linear-gradient(135deg, #0f4c81, #1565a8); color: #fff;
+  border-radius: var(--radius); padding: 18px 16px; margin-bottom: 14px;
+}
+.result .big { font-size: 34px; font-weight: 800; letter-spacing: .5px; }
+.result .big small { font-size: 15px; font-weight: 500; opacity: .85; }
+.result .sub { font-size: 12px; opacity: .85; margin-top: 2px; }
+
+.breakdown { font-size: 13px; }
+.breakdown .line { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px dashed var(--line); }
+.breakdown .line:last-child { border-bottom: none; }
+.breakdown .line b { font-weight: 700; }
+
+/* Tiers */
+.tier {
+  display: grid; grid-template-columns: 1.3fr 1fr 1fr auto; gap: 6px; align-items: end;
+  margin-bottom: 8px;
+}
+.tier .out { font-size: 13px; font-weight: 700; color: var(--primary); align-self: center; }
+
+/* Product list */
+.list-item {
+  display: flex; align-items: center; gap: 12px; padding: 12px; background: #fff;
+  border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 10px;
+}
+.list-item .thumb {
+  width: 54px; height: 54px; border-radius: 10px; background: #eef2f7; object-fit: cover; flex: 0 0 auto;
+  display: grid; place-items: center; color: var(--muted); font-size: 22px;
+}
+.list-item .info { flex: 1; min-width: 0; }
+.list-item .info .nm { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list-item .info .mt { font-size: 12px; color: var(--muted); }
+.list-item .acts { display: flex; gap: 6px; flex: 0 0 auto; }
+
+/* Tables */
+table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.tbl th, table.tbl td { border: 1px solid var(--line); padding: 7px 8px; text-align: center; }
+table.tbl th { background: #f0f4f8; color: var(--primary); font-weight: 700; }
+
+/* Chips */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  background: #eaf4fb; color: var(--primary); border-radius: 16px; padding: 6px 12px;
+  font-size: 13px; cursor: pointer; border: 1px solid transparent;
+}
+.chip.sel { background: var(--primary); color: #fff; }
+
+/* Toast */
+.toast {
+  position: fixed; left: 50%; bottom: calc(var(--tab-h) + 20px); transform: translateX(-50%);
+  background: rgba(20,30,40,.92); color: #fff; padding: 10px 18px; border-radius: 22px;
+  font-size: 14px; z-index: 999; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none;
+  max-width: 86vw; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+/* Modal */
+.modal-mask {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200;
+  display: none; align-items: flex-end; justify-content: center;
+}
+.modal-mask.show { display: flex; }
+.modal {
+  background: #fff; width: 100%; max-width: 560px; border-radius: 18px 18px 0 0;
+  max-height: 88vh; overflow-y: auto; padding: 18px 16px calc(18px + env(safe-area-inset-bottom,0px));
+  animation: slideup .25s ease;
+}
+@keyframes slideup { from { transform: translateY(40px);} to {transform:none;} }
+.modal h3 { margin: 0 0 14px; color: var(--primary); }
+.modal .close { float: right; background: none; border: none; font-size: 22px; color: var(--muted); cursor: pointer; line-height: 1; }
+
+/* utility */
+.center { text-align: center; }
+.mt { margin-top: 12px; }
+.mb { margin-bottom: 12px; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.hidden { display: none !important; }
+.divider { height: 1px; background: var(--line); margin: 14px 0; }
+.kv { display:flex; justify-content: space-between; padding: 6px 0; font-size: 14px; border-bottom: 1px dashed var(--line); }
+.kv:last-child { border-bottom: none; }
+.kv b { font-weight: 700; }
+.section-title { font-size: 13px; color: var(--muted); font-weight: 700; margin: 4px 0 8px; text-transform: uppercase; letter-spacing: .5px; }
+.pill { display:inline-block; background:#eef2f7; border-radius:10px; padding:3px 9px; font-size:12px; color:var(--primary); margin:2px 4px 2px 0; }
+.empty { text-align:center; color: var(--muted); padding: 40px 16px; font-size: 14px; }
+.empty .em { font-size: 40px; display:block; margin-bottom: 8px; }
+
+/* ===================================================================
+   桌面端适配 (≥768px)：底部 Tab 自动切换为左侧导航 + 居中宽内容
+   纯响应式，不破坏 PWA 安装能力
+   =================================================================== */
+@media (min-width: 768px) {
+  :root { --sidebar-w: 224px; }
+
+  /* 取消移动端底部留白，改为左侧留白 */
+  body {
+    padding-top: var(--header-h);
+    padding-bottom: 0;
+    padding-left: 0;
+    font-size: 15px;
+  }
+
+  /* 顶栏收窄到导航栏右侧，营造桌面 App 感 */
+  .app-header {
+    left: var(--sidebar-w);
+    right: 0;
+    padding-left: 20px;
+    padding-right: 16px;
+  }
+
+  /* 底部 Tab → 左侧竖向导航栏（全高） */
+  .tabbar {
+    flex-direction: column;
+    top: 0; bottom: 0; left: 0; right: auto;
+    width: var(--sidebar-w);
+    height: 100vh;
+    padding: 0;
+    border-top: none;
+    border-right: 1px solid var(--line);
+    box-shadow: 2px 0 10px rgba(15,76,129,.05);
+    z-index: 49;
+  }
+  .tabbar button {
+    flex: none;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 18px;
+    font-size: 14px;
+    border-left: 3px solid transparent;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+  }
+  .tabbar button:first-child { margin-top: var(--header-h); }
+  .tabbar button .ic { font-size: 20px; line-height: 1; }
+  .tabbar button.active {
+    border-left-color: var(--primary);
+    background: #eef6fc;
+    color: var(--primary);
+  }
+  .tabbar button.active .ic { transform: none; }
+
+  /* 主内容区：右侧居中、限定最大宽度，避免桌面过宽 */
+  main { margin-left: var(--sidebar-w); }
+  .page {
+    padding: 24px 28px 40px;
+    max-width: 960px;
+    margin: 0 auto;
+    animation: fade .2s ease;
+  }
+
+  /* 卡片与表单在桌面更宽松 */
+  .card { padding: 20px 22px; margin-bottom: 18px; }
+  .card h3 { font-size: 16px; }
+  .grid2 { grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .row { gap: 16px; }
+  .field { margin-bottom: 14px; }
+  input, select, textarea { padding: 12px 14px; font-size: 15px; }
+
+  /* 结果区在桌面采用两列网格，信息更紧凑 */
+  #calcResult { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  #calcResult > .result { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  #calcResult > .result .sub { margin-top: 0; flex: 1; }
+  #calcResult > .card { margin-bottom: 0; }
+  #calcResult > .btn-row { grid-column: 1 / -1; display: flex; gap: 14px; }
+  #calcResult > .btn-row .btn { width: auto; flex: 1; }
+
+  /* 产品库：桌面两列网格 */
+  #prodList { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  #prodList .list-item { margin-bottom: 0; }
+
+  /* 文案类型 / 风格 并排 */
+  .chips { gap: 10px; }
+  .chip { padding: 8px 16px; font-size: 14px; }
+
+  /* 弹窗：桌面居中、不再从底部滑出 */
+  .modal-mask { align-items: center; padding: 24px; }
+  .modal {
+    width: 100%;
+    max-width: 640px;
+    border-radius: 18px;
+    max-height: 86vh;
+    padding: 24px 24px 28px;
+    animation: pop .2s ease;
+  }
+  @keyframes pop { from { transform: scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  /* 提示条：移到底部居中 */
+  .toast { bottom: 24px; font-size: 14px; }
+}
+
+/* 超宽屏进一步收窄内容，保持阅读舒适 */
+@media (min-width: 1280px) {
+  .page { max-width: 1080px; }
+  #prodList { grid-template-columns: 1fr 1fr 1fr; }
+}

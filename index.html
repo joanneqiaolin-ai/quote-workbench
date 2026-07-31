@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f4c81" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="报价工作台" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <title>外贸报价AI工作台</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- 顶栏 -->
+  <header class="app-header">
+    <div class="brand">
+      <span class="logo">¥</span>
+      <div>报价工作台<div class="sub">鞋类 · 钢头安全鞋 · FOB晋江</div></div>
+    </div>
+    <button class="btn-help" id="helpBtn" title="安装与使用帮助">?</button>
+    <button class="btn-install" id="installBtn" hidden>安装到桌面</button>
+  </header>
+
+  <!-- ============ 报价计算 ============ -->
+  <main>
+  <section id="page-calc" class="page active">
+    <div class="card">
+      <h3>① 产品与包装 <span class="tag">基础信息</span></h3>
+      <div class="field">
+        <label>产品名称</label>
+        <input id="c_name" placeholder="如：Steel Toe Safety Shoe ST-201" />
+      </div>
+      <div class="field">
+        <label>材质 / 规格</label>
+        <input id="c_material" placeholder="如：PU upper + steel toe + EVA sole" />
+      </div>
+      <div class="section-title">装箱尺寸（外箱 cm）</div>
+      <div class="grid3">
+        <div class="field"><label>长 L</label><input id="c_l" type="number" inputmode="decimal" placeholder="58" /></div>
+        <div class="field"><label>宽 W</label><input id="c_w" type="number" inputmode="decimal" placeholder="38" /></div>
+        <div class="field"><label>高 H</label><input id="c_h" type="number" inputmode="decimal" placeholder="32" /></div>
+      </div>
+      <div class="field">
+        <label>每箱双数 <span class="hint">（一箱装几双）</span></label>
+        <input id="c_ppc" type="number" inputmode="numeric" placeholder="10" />
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>② 成本与报价参数 <span class="tag">核心</span></h3>
+      <div class="field">
+        <label>贸易术语 (Incoterms)</label>
+        <select id="c_incoterm">
+          <option value="FOB">FOB 晋江（含国内费用）</option>
+          <option value="EXW">EXW 工厂交货（仅出厂价）</option>
+          <option value="CIF">CIF 含海运费 + 保险费</option>
+        </select>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>人民币成本 (元/双)</label><input id="c_cost" type="number" inputmode="decimal" placeholder="85" /></div>
+        <div class="field"><label>国内费用 (元/双) <span class="hint">包装+内陆+港杂</span></label><input id="c_dom" type="number" inputmode="decimal" placeholder="6" /></div>
+      </div>
+      <div class="grid3">
+        <div class="field"><label>MOQ (双)</label><input id="c_moq" type="number" inputmode="numeric" placeholder="500" /></div>
+        <div class="field"><label>汇率 (USD/CNY)</label><input id="c_rate" type="number" inputmode="decimal" value="7.2" /></div>
+        <div class="field"><label>利润率 %</label><input id="c_profit" type="number" inputmode="decimal" value="15" /></div>
+      </div>
+      <div id="cifBox" class="hidden">
+        <div class="section-title">CIF 运费与保险</div>
+        <div class="grid2">
+          <div class="field"><label>海运费 (USD/双)</label><input id="c_freight" type="number" inputmode="decimal" placeholder="如 1.5" /></div>
+          <div class="field"><label>保险费率 % <span class="hint">按110%投保</span></label><input id="c_ins" type="number" inputmode="decimal" value="0.8" /></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>③ 阶梯报价 <span class="tag">可选</span></h3>
+      <div class="muted" style="margin-bottom:8px">按数量区间设置递减，留空则只出基础价。</div>
+      <div id="tierList"></div>
+      <button class="btn light sm" id="addTier">+ 增加一档</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="calcBtn">计算 FOB 单价</button>
+    </div>
+
+    <div id="calcResult" class="hidden">
+      <div class="result">
+        <div class="big" id="r_base">$0.00 <small>/双 (FOB 基础价)</small></div>
+        <div class="sub" id="r_rate"></div>
+      </div>
+      <div class="card">
+        <h3>计算明细</h3>
+        <div class="breakdown" id="r_break"></div>
+      </div>
+      <div class="card" id="r_tiers_card">
+        <h3>阶梯报价明细</h3>
+        <table class="tbl" id="r_tiers"></table>
+      </div>
+      <div class="card">
+        <h3>装箱换算</h3>
+        <div class="breakdown" id="r_pack"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn accent" id="saveFromCalc">存入产品库</button>
+        <button class="btn light" id="gotoDocFromCalc">去生成文档</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 文档生成 ============ -->
+  <section id="page-docs" class="page">
+    <div class="card">
+      <h3>① 选择文档模板 <span class="tag">可上传</span></h3>
+      <div class="field">
+        <label>使用模板</label>
+        <select id="doc_template"></select>
+      </div>
+      <div class="btn-row">
+        <button class="btn light sm" id="uploadTplBtn">上传 Excel/Word 模板</button>
+        <button class="btn ghost sm" id="refreshTplBtn">刷新列表</button>
+      </div>
+      <input type="file" id="tplFile" accept=".docx,.xlsx" class="hidden" />
+      <div class="muted mt" id="tplInfo"></div>
+    </div>
+
+    <div class="card">
+      <h3>② 数据来源</h3>
+      <div class="field">
+        <label>从产品库调入</label>
+        <select id="doc_product"><option value="">— 手动输入 / 暂不调入 —</option></select>
+      </div>
+      <div id="docFields"></div>
+      <button class="btn light sm mt" id="docFillFromProduct">用上方产品填充字段</button>
+    </div>
+
+    <div class="card">
+      <h3>③ 产品图片（插入文档）<span class="tag">可选</span></h3>
+      <div class="muted mb">上传一张产品图，生成时会插入到报价表 / PI 的「图片」列。</div>
+      <div class="field">
+        <label>选择图片</label>
+        <input type="file" id="docImage" accept="image/*" />
+      </div>
+      <div id="docImgPreview" class="hidden" style="margin-top:6px"></div>
+    </div>
+
+    <div class="card">
+      <h3>④ 生成文档</h3>
+      <div class="grid2">
+        <button class="btn" id="genQuotation">生成 Quotation</button>
+        <button class="btn accent" id="genPI">生成 PI (形式发票)</button>
+      </div>
+      <div class="muted mt" id="docMsg"></div>
+    </div>
+
+    <div class="card">
+      <h3>已上传模板管理</h3>
+      <div id="tplManage" class="muted">暂无上传模板</div>
+    </div>
+  </section>
+
+  <!-- ============ 产品资料库 ============ -->
+  <section id="page-products" class="page">
+    <div class="flex-between mb">
+      <div class="field" style="margin:0;flex:1">
+        <input id="prodSearch" placeholder="🔍 搜索产品名称 / 材质" />
+      </div>
+      <button class="btn accent sm" id="addProd" style="margin-left:8px;width:auto">+ 新增</button>
+    </div>
+    <div id="prodList"></div>
+  </section>
+
+  <!-- ============ 商务文案 ============ -->
+  <section id="page-copy" class="page">
+    <div class="card">
+      <h3>① 选择文案类型</h3>
+      <div class="chips" id="copyType">
+        <span class="chip sel" data-type="reply">英文询盘回复</span>
+        <span class="chip" data-type="dev">外贸开发信</span>
+      </div>
+      <div class="field mt">
+        <label>开发信风格 <span class="hint">（选开发信时生效）</span></label>
+        <select id="devStyle">
+          <option value="new">新品推荐</option>
+          <option value="renew">老客户唤醒</option>
+          <option value="fair">展会跟进</option>
+        </select>
+      </div>
+    </div>
+    <div class="card">
+      <h3>② 关键信息</h3>
+      <div class="field"><label>客户/公司名称</label><input id="cp_cust" placeholder="如：Mr. John / ABC Trading" /></div>
+      <div class="field"><label>涉及产品</label><input id="cp_prod" placeholder="如：ST-201 Steel Toe Shoe" /></div>
+      <div class="field"><label>价格 (FOB USD)</label><input id="cp_price" placeholder="如：$12.50 / pair" /></div>
+      <div class="field"><label>MOQ</label><input id="cp_moq" placeholder="如：500 pairs" /></div>
+      <div class="field"><label>背景 / 客户问题 <span class="hint">（询盘回复必填）</span></label>
+        <textarea id="cp_ctx" placeholder="客户原话或需要回复的要点，如：客户问能否降低MOQ到300双、交期多久"></textarea>
+      </div>
+      <div class="field"><label>语气风格</label>
+        <select id="cp_tone">
+          <option value="pro">专业得体</option>
+          <option value="warm">热情友好</option>
+          <option value="firm">简洁坚定</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" id="genCopy">生成文案</button>
+    <div id="copyResult" class="hidden">
+      <div class="card">
+        <div class="flex-between mb">
+          <h3 style="margin:0">生成结果</h3>
+          <button class="btn light sm" id="copyCopy">复制全文</button>
+        </div>
+        <div id="copyText" style="white-space:pre-wrap;font-size:14px;line-height:1.7"></div>
+      </div>
+    </div>
+  </section>
+  </main>
+
+  <!-- 底部 Tab -->
+  <nav class="tabbar">
+    <button data-page="calc" class="active"><span class="ic">🧮</span>报价</button>
+    <button data-page="docs"><span class="ic">📄</span>文档</button>
+    <button data-page="products"><span class="ic">📦</span>产品库</button>
+    <button data-page="copy"><span class="ic">✉️</span>文案</button>
+  </nav>
+
+  <!-- 通用 Modal -->
+  <div class="modal-mask" id="modalMask">
+    <div class="modal" id="modalBody"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- 依赖库 -->
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script src="vendor/pizzip.min.js"></script>
+  <script src="vendor/docxtemplater.min.js"></script>
+  <script src="vendor/FileSaver.min.js"></script>
+  <!-- 业务脚本 -->
+  <script src="js/storage.js"></script>
+  <script src="js/calc.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/docs.js"></script>
+  <script src="js/copy.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
