@@ -72,20 +72,36 @@
     return r.arrayBuffer();
   }
 
+  // Word 常把 {{product_name}} 拆成多个 <w:t> 片段，导致扫描不到、替换不掉。
+  // 这里把被拆开的占位符重新合并回单个 {{tag}}（仅作用于占位符内部，不动其他格式）。
+  function mergeSplitPlaceholders(xml) {
+    return xml.replace(/\{\{([\s\S]*?)\}\}/g, (m) => {
+      // Word 会把占位符拆到多个 run：</w:t> 与 <w:t> 之间可能夹着 </w:r><w:r>，
+      // 需要把这些跨 run 的标签一并去掉，使 {{字段}} 重新回到同一段文本
+      let s = m.replace(/<\/w:t>[\s\S]*?<w:t[^>]*>/g, '');
+      s = s.replace(/\{\{\s+/, '{{').replace(/\s+\}\}/, '}}');
+      return s;
+    });
+  }
+
   // 扫描 docx / xlsx 中的 {{...}} 占位符
   async function scanPlaceholders(buf, kind) {
     const zip = new PizZip(buf);
     const names = Object.keys(zip.files);
     const set = new Set();
-    const re = /\{\{\s*([\w]+)\s*\}\}/g;
+    const collect = (txt) => {
+      txt = mergeSplitPlaceholders(txt);
+      const re = /\{\{\s*([\w]+)\s*\}\}/g;
+      let m;
+      while ((m = re.exec(txt))) set.add(m[1]);
+    };
     if (kind === 'xlsx') {
       names.filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n) || n === 'xl/sharedStrings.xml').forEach(n => {
-        const txt = zip.files[n].asText();
-        let m; while ((m = re.exec(txt))) set.add(m[1]);
+        if (zip.files[n]) collect(zip.files[n].asText());
       });
     } else {
-      ['word/document.xml', 'word/header1.xml', 'word/footer1.xml'].forEach(n => {
-        if (zip.files[n]) { const txt = zip.files[n].asText(); let m; while ((m = re.exec(txt))) set.add(m[1]); }
+      ['word/document.xml', 'word/header1.xml', 'word/header2.xml', 'word/footer1.xml', 'word/footer2.xml'].forEach(n => {
+        if (zip.files[n]) collect(zip.files[n].asText());
       });
     }
     return [...set];
@@ -96,7 +112,7 @@
     const box = document.getElementById('docFields');
     box.innerHTML = '<div class="section-title">文档字段 (' + placeholders.length + ' 个占位符)</div>';
     if (!placeholders.length) {
-      box.innerHTML += '<div class="muted">未检测到占位符，将按规范字段自动填充（适用于内置模板）。可直接点生成。</div>';
+      box.innerHTML += '<div class="muted">未检测到 <code>{{ }}</code> 占位符。如需自动填充，请在你的模板里用 <code>{{字段名}}</code> 标记，例如：{{product_name}}、{{unit_price}}、{{qty}}、{{amount}}、{{product_image}}。未标记的原有内容会原样保留。</div>';
       return;
     }
     placeholders.forEach(name => {
@@ -171,14 +187,18 @@
     const buf = await getSelectedTemplateBuf();
     const ph = await scanPlaceholders(buf, currentTplKind);
     currentPlaceholders = ph;
+    const isUser = id.startsWith('up_');
     document.getElementById('tplInfo').textContent = ph.length
-      ? '检测到占位符：' + ph.map(p => '{{' + p + '}}').join('、')
-      : '未检测到占位符（内置模板按规范字段填充）。';
-    buildFieldUI(ph, buildCanonical());
+      ? '检测到占位符：' + ph.map(p => '{{' + p + '}}').join('、') + (isUser ? '（仅填充你在下方填写的内容，模板其余部分原样保留）' : '')
+      : '未检测到占位符。';
+    buildFieldUI(ph, buildCanonical(isUser));
   }
 
   // 由产品库当前选择构建规范数据
-  function buildCanonical() {
+  // forUser=true 表示当前是“用户自有模板”：只带出用户可显式控制的数据
+  // （计算器结果 / 产品库 / 公司名 / 产品图片），不自动塞日期/付款方式/编号/数量/金额等，
+  // 这些表单型字段留给用户在选项里自行填写，从而“保持用户模板原样”。
+  function buildCanonical(forUser) {
     const pid = document.getElementById('doc_product').value;
     const p = WB.Products && WB.Products.getCached(pid);
     const base = WB.Docs._lastCalc || {};
@@ -197,15 +217,23 @@
     c.exw_price = base.exwUsd != null ? '$' + base.exwUsd.toFixed(2) : '';
     c.freight = base.freight ? '$' + base.freight.toFixed(2) + '/pair' : '—';
     c.insurance = base.insurance ? '$' + base.insurance.toFixed(2) + '/pair' : '—';
-    c.date = new Date().toISOString().slice(0, 10);
-    c.company = WB._company || 'Your Company Name';
-    c.customer = '';
-    c.payment = 'T/T 30% deposit, 70% before shipment';
-    c.no = '1';
-    c.qty = c.moq || '1000';
-    c.amount = '';
-    c.total = '';
+    c.company = WB._company || '';
+    // 仅内置模板补全以下“表单型”字段；用户自有模板保持原样，由用户自行在选项填写
+    if (!forUser) {
+      c.date = new Date().toISOString().slice(0, 10);
+      c.customer = '';
+      c.payment = 'T/T 30% deposit, 70% before shipment';
+      c.no = '1';
+      c.qty = c.moq || '1000';
+      c.amount = '';
+      c.total = '';
+    }
     return c;
+  }
+
+  function isUserTemplate() {
+    const id = document.getElementById('doc_template').value;
+    return !!(id && id.startsWith('up_'));
   }
 
   // 把任意图片来源（dataURL / blob URL / http URL）统一成 dataURL
@@ -302,7 +330,7 @@
     let zip = new PizZip(buf);
     const docXmlFile = zip.files['word/document.xml'];
     if (docXmlFile) {
-      let xml = docXmlFile.asText();
+      let xml = mergeSplitPlaceholders(docXmlFile.asText());
       if (!imgDataUrl) xml = xml.replace(/\{%product_image%\}/g, '');
       zip.file('word/document.xml', xml);
       buf = zip.generate({ type: 'arraybuffer' });
@@ -311,7 +339,9 @@
     const doc = new docxtemplater(zip2, {
       paragraphLoop: true,
       linebreaks: true,
-      delimiters: { start: '{{', end: '}}' }
+      delimiters: { start: '{{', end: '}}' },
+      // 未填写的占位符渲染为空，避免报错；模板其余内容原样保留
+      nullGetter: function () { return ''; }
     });
     doc.render(data);
     let out = doc.getZip().generate({
@@ -359,7 +389,7 @@
       const buf = await getSelectedTemplateBuf();
       const data = gatherData();
       // 图片来源：文档页手动上传优先，其次产品库图片
-      const canon = buildCanonical();
+      const canon = buildCanonical(isUserTemplate());
       if (uploadedImage) data.product_image = uploadedImage;
       else if (canon.product_image) data.product_image = canon.product_image;
       // 金额/总价兜底计算
@@ -397,13 +427,15 @@
       const file = e.target.files[0]; if (!file) return;
       const buf = await file.arrayBuffer();
       const kind = file.name.toLowerCase().endsWith('.xlsx') ? 'xlsx' : 'docx';
-      await WB.DB.saveTemplate({ name: file.name, kind, data: buf });
-      WB.toast('模板已上传');
+      const rec = await WB.DB.saveTemplate({ name: file.name, kind, data: buf });
+      WB.toast('模板已上传，已自动选中');
       await refreshTemplates();
+      const sel = document.getElementById('doc_template');
+      if (rec && rec.id) { sel.value = 'up_' + rec.id; await onTemplateChange(); }
     };
     document.getElementById('doc_template').onchange = onTemplateChange;
-    document.getElementById('doc_product').onchange = () => buildFieldUI(currentPlaceholders, buildCanonical());
-    document.getElementById('docFillFromProduct').onclick = () => { buildFieldUI(currentPlaceholders, buildCanonical()); WB.toast('已用产品填充'); };
+    document.getElementById('doc_product').onchange = () => buildFieldUI(currentPlaceholders, buildCanonical(isUserTemplate()));
+    document.getElementById('docFillFromProduct').onclick = () => { buildFieldUI(currentPlaceholders, buildCanonical(isUserTemplate())); WB.toast('已用产品填充'); };
     document.getElementById('genQuotation').onclick = () => generate('quotation');
     document.getElementById('genPI').onclick = () => generate('pi');
     setupImageUpload();

@@ -1,5 +1,5 @@
 /* Service Worker - 缓存应用外壳，支持离线打开 */
-const CACHE = 'wb-quote-v5';
+const CACHE = 'wb-quote-v6';
 const SHELL = [
   '.',
   'index.html',
