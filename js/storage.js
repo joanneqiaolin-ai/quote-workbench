@@ -98,6 +98,54 @@
     }
   };
 
+  // ---- 备份 / 恢复（跨设备同步，纯本机，不上云）----
+  function _clearStore(name) {
+    return tx(name, 'readwrite').then(store => reqP(store.clear()));
+  }
+  function _abToB64(ab) {
+    const bytes = new Uint8Array(ab);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+  function _b64ToAb(b64) {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+  }
+
+  DB.exportAll = async function () {
+    const [products, templates, company, rate] = await Promise.all([
+      DB.listProducts(), DB.listTemplates(),
+      DB.getKV('company', ''), DB.getKV('rate', '7.2')
+    ]);
+    return {
+      app: 'wb-quote-workbench',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      settings: { company: company || '', rate: rate || '7.2' },
+      products: products || [],
+      templates: (templates || []).map(t => ({ ...t, data: _abToB64(t.data) }))
+    };
+  };
+
+  DB.importAll = async function (obj) {
+    if (!obj || obj.app !== 'wb-quote-workbench') throw new Error('不是有效的工作台备份文件');
+    await _clearStore(STORES.products);
+    await _clearStore(STORES.templates);
+    if (obj.settings) {
+      if (obj.settings.company != null) await DB.setKV('company', obj.settings.company);
+      if (obj.settings.rate != null) await DB.setKV('rate', obj.settings.rate);
+    }
+    for (const p of (obj.products || [])) await DB.saveProduct(p);
+    for (const t of (obj.templates || [])) {
+      const rec = { ...t };
+      if (typeof rec.data === 'string') rec.data = _b64ToAb(rec.data);
+      await DB.saveTemplate(rec);
+    }
+  };
+
   global.WB = global.WB || {};
   global.WB.DB = DB;
 })(window);

@@ -42,6 +42,14 @@
       <div class="field"><label>默认汇率 (USD/CNY)</label><input id="setRate" type="number" value="${rate}" /></div>
       <div class="muted mb">设置后，生成的文档与文案将自动带入公司名；新报价默认使用此汇率。</div>
       <button class="btn" id="setSave">保存设置</button>
+
+      <div class="section-title" style="margin-top:18px">📦 数据备份与恢复（跨设备同步）</div>
+      <div class="muted mb">手机导出的备份，在电脑上「导入」即可让产品库、自建模板、设置完全一致。数据仅存本机，不上传云端。</div>
+      <div class="flex gap" style="gap:8px">
+        <button class="btn ghost sm" id="btnExport">📤 导出备份</button>
+        <button class="btn ghost sm" id="btnImport">📥 导入备份</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden />
+      </div>
     `);
     document.getElementById('setClose').onclick = WB.closeModal;
     document.getElementById('setSave').onclick = async () => {
@@ -53,6 +61,34 @@
       if (rc && (!rc.value || rc.value === '7.2')) rc.value = document.getElementById('setRate').value.trim();
       WB.toast('设置已保存');
       WB.closeModal();
+    };
+    // 导出备份
+    document.getElementById('btnExport').onclick = async () => {
+      try {
+        const data = await WB.DB.exportAll();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const fname = 'workbench-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+        saveAs(blob, fname);
+        WB.toast('备份已导出：' + fname);
+      } catch (e) { WB.toast('导出失败：' + (e.message || e)); }
+    };
+    // 导入备份
+    document.getElementById('btnImport').onclick = () => document.getElementById('importFile').click();
+    document.getElementById('importFile').onchange = async (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      try {
+        const text = await f.text();
+        const obj = JSON.parse(text);
+        await WB.DB.importAll(obj);
+        WB.toast('导入成功，正在刷新数据…');
+        WB.closeModal();
+        if (WB.Products && WB.Products.refreshSelect) await WB.Products.refreshSelect('doc_product', true);
+        if (WB.Docs && WB.Docs.refreshTemplates) await WB.Docs.refreshTemplates();
+      } catch (err) {
+        WB.toast('导入失败：' + (err.message || err));
+      }
+      e.target.value = '';
     };
   }
   WB.escapeAttr = function (s) { return String(s == null ? '' : s).replace(/"/g, '&quot;'); };
